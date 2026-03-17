@@ -5,7 +5,7 @@ from app.config import settings
 
 engine = create_async_engine(
     settings.DATABASE_URL,
-    echo=True,        # loguje SQL upite u terminalu (korisno za development)
+    echo=False,
     pool_size=10,
     max_overflow=20,
 )
