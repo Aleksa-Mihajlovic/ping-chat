@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from app.config import settings
 import redis.asyncio as aioredis
+import httpx
 from app.middleware.rate_limiter import RateLimiterMiddleware
 from app.middleware.auth import AuthMiddleware
 from app.routes.proxy import router as proxy_router
@@ -30,12 +31,16 @@ async def lifespan(app: FastAPI):
     except Exception:
         print("Redis not available — rate limiting disabled")
 
-    app.state.redis = redis_client  # čuvamo na app.state da bude dostupan svuda
-    
-    yield  # ← ovdje app radi i prima requestove
-    
+    app.state.redis = redis_client
+
+    http_client = httpx.AsyncClient(timeout=30.0)
+    app.state.http_client = http_client
+
+    yield
+
     # ── Shutdown ─────────────────────────
     print("Gateway shutting down...")
+    await http_client.aclose()
     if redis_client:
         await redis_client.aclose()
 

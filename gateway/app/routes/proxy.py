@@ -1,59 +1,70 @@
 import httpx
+import json
 from fastapi import APIRouter, Request, Response, HTTPException
+from fastapi.responses import JSONResponse
 from app.config import settings
 
 router = APIRouter()
 
-async def get_http_client() -> httpx.AsyncClient:
-    return httpx.AsyncClient(timeout=30.0)
+
+def set_auth_cookies(response: JSONResponse, access_token: str) -> JSONResponse:
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=False,   # True u produkciji (HTTPS)
+        samesite="lax",
+        max_age=3600
+    )
+    return response
 
 
 async def forward_request(
         request: Request,
         target_url: str
         ) -> Response:
-    
-    async with httpx.AsyncClient(timeout=30.0) as client:
 
-        headers = {
-            key: value
-            for key, value in request.headers.items()
-            if key.lower() != "host"
-        }
+    client = request.app.state.http_client
 
-        body = await request.body()
+    headers = {
+        key: value
+        for key, value in request.headers.items()
+        if key.lower() != "host"
+    }
 
-        try:
-            response = await client.request(
-                method=request.method,
-                url=target_url,
-                headers=headers,
-                content=body,
-                params=request.query_params
-            )
-        except httpx.ConnectError:
-            raise HTTPException(
-                status_code=503,
-                detail="Service unavailable could not connect to upstream"
-            )
-        except httpx.TimeoutException:
-            raise HTTPException(
-                status_code=504,
-                detail="Service timeout upstream took too long to respond"
-            )
-        
-        response_headers = {
-            key: value
-            for key, value in response.headers.items()
-            if key.lower() != "transfer-encoding"
-        }
+    body = await request.body()
 
-        return Response(
-            content=response.content,
-            status_code=response.status_code,
-            headers=response_headers,
-            media_type=response.headers.get("content-type"),
+    try:
+        response = await client.request(
+            method=request.method,
+            url=target_url,
+            headers=headers,
+            content=body,
+            params=request.query_params
         )
+    except httpx.ConnectError:
+        raise HTTPException(
+            status_code=503,
+            detail="Service unavailable could not connect to upstream"
+        )
+    except httpx.TimeoutException:
+        raise HTTPException(
+            status_code=504,
+            detail="Service timeout upstream took too long to respond"
+        )
+
+    response_headers = {
+        key: value
+        for key, value in response.headers.items()
+        if key.lower() != "transfer-encoding"
+    }
+
+    return Response(
+        content=response.content,
+        status_code=response.status_code,
+        headers=response_headers,
+        media_type=response.headers.get("content-type"),
+    )
 
 
 @router.api_route(
@@ -61,13 +72,15 @@ async def forward_request(
     methods=["GET", "POST", "PUT", "PATCH", "DELETE"]
 )
 async def auth_proxy(path: str, request: Request):
-    """
-    /auth/login        → http://auth-service:8001/auth/login
-    /auth/register     → http://auth-service:8001/auth/register
-    /auth/me           → http://auth-service:8001/auth/me
-    """
     target_url = f"{settings.AUTH_SERVICE_URL}/auth/{path}"
-    return await forward_request(request, target_url)
+    response = await forward_request(request, target_url)
+
+    if path == "login" and response.status_code == 200:
+        token_data = json.loads(response.body)
+        access_token = token_data.get("access_token")
+        return set_auth_cookies(JSONResponse(content={"message": "Login successful"}), access_token)
+
+    return response
 
 
 @router.api_route(

@@ -1,4 +1,5 @@
-from fastapi import Request, HTTPException
+from fastapi import Request
+from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from jose import jwt, JWTError
 from app.config import settings
@@ -7,7 +8,6 @@ PUBLIC_ROUTES = [
     "/health",
     "/auth/health",
     "/chat/health",
-    "/auth/register",
     "/auth/login",
     "/auth/refresh",
     "/docs",
@@ -29,10 +29,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
         token = request.cookies.get("access_token")
 
         if not token:
-            raise HTTPException(
-                status_code = 401,
-                detail = "Not authenticated"
-            )
+            return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
         
 
         # Check redis blacklist
@@ -52,10 +49,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 if jti:
                     is_blacklisted = await redis.get(f"blacklist:{jti}")
                     if is_blacklisted:
-                        raise HTTPException(
-                            status_code=401,
-                            detail="Token has been revoked please login again"
-                        )
+                        return JSONResponse(status_code=401, content={"detail": "Token has been revoked please login again"})
                     
             except JWTError:
                 pass
@@ -68,10 +62,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 algorithms=[settings.JWT_ALGORITHM]
             )
         except JWTError as e:
-            raise HTTPException(
-                status_code=401,
-                detail=f"Invalid or expired token: {str(e)}"
-            )
+            return JSONResponse(status_code=401, content={"detail": f"Invalid or expired token: {str(e)}"})
         
         
         request.state.user_id = payload.get("sub")
