@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from app.exceptions.auth_exceptions import AlreadyExistsError, InvalidCredentialsError
+from app.exceptions.auth_exceptions import AlreadyExistsError, InvalidCredentialsError, EntityNotFoundError
 
 
 def register_exception_handlers(app: FastAPI) -> None:
@@ -21,3 +21,7 @@ def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(InvalidCredentialsError)
     async def invalid_credentials_handler(request, exc):
         return JSONResponse(status_code=401, content={"message": exc.message})
+
+    @app.exception_handler(EntityNotFoundError)
+    async def entity_not_found_handler(request, exc):
+        return JSONResponse(status_code=404, content={"message": exc.message})

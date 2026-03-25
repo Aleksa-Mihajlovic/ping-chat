@@ -1,18 +1,30 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Mail, Lock } from 'lucide-react'
+import { User, Lock } from 'lucide-react'
 import Input from '../components/ui/Input'
 import Button from '../components/ui/Button'
+import api from '../lib/api'
+import { useAuth } from '../context/AuthContext'
 
 export default function LoginPage() {
-  const [form, setForm] = useState({ email: '', password: '' })
+  const [form, setForm] = useState({ username: '', password: '' })
+  const [error, setError] = useState(null)
   const navigate = useNavigate()
+  const { setUser } = useAuth()
 
   const set = field => e => setForm(f => ({ ...f, [field]: e.target.value }))
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    navigate('/chat')
+    setError(null)
+    try {
+      await api.post('/auth/login', form)
+      const { data } = await api.get('/auth/me')
+      setUser(data)
+      navigate('/chat')
+    } catch {
+      setError('Pogrešan username ili lozinka')
+    }
   }
 
   return (
@@ -20,14 +32,15 @@ export default function LoginPage() {
       <div className="auth-card">
         <h1 className="auth-logo">Ping Chat</h1>
         <p className="auth-sub">Dobrodošli nazad</p>
+        {error && <p className="auth-error">{error}</p>}
         <form onSubmit={handleSubmit} className="auth-form">
           <Input
-            label="Email"
-            type="email"
-            placeholder="vas@email.com"
-            value={form.email}
-            onChange={set('email')}
-            icon={<Mail size={16} />}
+            label="Username"
+            type="text"
+            placeholder="vas_username"
+            value={form.username}
+            onChange={set('username')}
+            icon={<User size={16} />}
             required
           />
           <Input

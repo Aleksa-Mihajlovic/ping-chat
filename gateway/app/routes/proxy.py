@@ -80,6 +80,11 @@ async def auth_proxy(path: str, request: Request):
         access_token = token_data.get("access_token")
         return set_auth_cookies(JSONResponse(content={"message": "Login successful"}), access_token)
 
+    if path == "logout" and response.status_code == 200:
+        res = JSONResponse(content={"message": "Logged out"})
+        res.delete_cookie("access_token")
+        return res
+
     return response
 
 
