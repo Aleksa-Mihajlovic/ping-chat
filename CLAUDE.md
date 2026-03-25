@@ -8,7 +8,7 @@ Ping Chat is a microservices-based real-time chat application with four componen
 - **gateway** — API gateway handling CORS, JWT auth, rate limiting, and request proxying
 - **auth-service** — User authentication (FastAPI + PostgreSQL + Alembic)
 - **chat-service** — Chat rooms/messages + WebSocket support (FastAPI + PostgreSQL + Redis)
-- **frontend** — React 19 + Vite SPA
+- **frontend** — React 19 + Vite SPA (JavaScript, not TypeScript; ESLint flat config v9+)
 
 ## Commands
 
@@ -18,6 +18,7 @@ cd frontend
 npm install
 npm run dev        # Dev server on localhost:5173
 npm run build
+npm run preview    # Preview production build locally
 npm run lint
 ```
 
@@ -40,7 +41,7 @@ alembic revision --autogenerate -m "<description>"
 
 ### Request Flow
 ```
-Frontend (3000) → Gateway (8000) → auth-service (8001)
+Frontend (5173) → Gateway (8000) → auth-service (8001)
                                  → chat-service (8002)
 ```
 
