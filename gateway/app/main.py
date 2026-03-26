@@ -58,6 +58,14 @@ app = FastAPI(
 
 
 
+app.add_middleware(AuthMiddleware)
+
+app.add_middleware(
+    RateLimiterMiddleware,
+    max_requests=100,
+    window_seconds=60
+)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
@@ -65,14 +73,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-app.add_middleware(
-    RateLimiterMiddleware,
-    max_requests = 100,
-    window_seconds = 60
-)
-
-app.add_middleware(AuthMiddleware)
 
 
 @app.get("/health")

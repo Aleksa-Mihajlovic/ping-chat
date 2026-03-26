@@ -59,7 +59,6 @@ services:
       CHAT_SERVICE_URL: http://chat-service:8002
       REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET}
-      ALLOWED_ORIGINS: '["http://localhost"]'
     depends_on:
       - auth-service
       - chat-service

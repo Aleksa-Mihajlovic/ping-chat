@@ -348,6 +348,8 @@ a:hover { text-decoration: underline; }
 
 .input-field input::placeholder { color: var(--text-muted); }
 
+.input-error { font-size: 12px; color: #f15c6d; }
+
 /* ── Auth Pages ─────────────────────────── */
 .auth-page {
   min-height: 100vh;
@@ -385,6 +387,9 @@ a:hover { text-decoration: underline; }
 }
 
 .auth-form { display: flex; flex-direction: column; gap: 16px; margin-top: 8px; }
+.auth-form__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.col-span-2 { grid-column: span 2; }
+.auth-card--wide { max-width: 520px; }
 
 .auth-footer {
   font-size: 14px;

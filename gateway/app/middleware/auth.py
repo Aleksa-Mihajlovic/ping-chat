@@ -9,6 +9,7 @@ PUBLIC_ROUTES = [
     "/auth/health",
     "/chat/health",
     "/auth/login",
+    "/auth/register",
     "/auth/refresh",
     "/docs",
     "/openapi.json",
