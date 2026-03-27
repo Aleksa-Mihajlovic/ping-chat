@@ -1,59 +1,57 @@
 import { useState, useEffect, useRef } from 'react'
 import { MessageCircle } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
+import { useRooms } from '../hooks/useRooms'
+import { useMessages } from '../hooks/useMessages'
+import { useWebSocket } from '../hooks/useWebSocket'
 import ConversationSidebar from '../components/chat/ConversationSidebar'
 import ChatHeader from '../components/chat/ChatHeader'
 import Message from '../components/chat/Message'
 import MessageInput from '../components/chat/MessageInput'
-import { CHATS, MESSAGES } from '../data/mockData'
 
 export default function ChatPage() {
+  const { user } = useAuth()
   const [selectedId, setSelectedId] = useState(null)
-  const [messages, setMessages] = useState(MESSAGES)
   const bottomRef = useRef(null)
 
-  const selectedChat = CHATS.find(c => c.id === selectedId)
-  const chatMessages = selectedId ? (messages[selectedId] ?? []) : []
+  const { rooms, loading: roomsLoading, addRoom } = useRooms()
+  const { messages, addMessage }                  = useMessages(selectedId, user?.id)
+  const { sendMessage }                           = useWebSocket(selectedId, addMessage)
+
+  const selectedRoom = rooms.find(r => r.id === selectedId)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [chatMessages.length, selectedId])
+  }, [messages.length, selectedId])
 
-  const sendMessage = (text) => {
-    const newMsg = {
-      id: Date.now(),
-      from: 'me',
-      text,
-      time: new Date().toLocaleTimeString('sr', { hour: '2-digit', minute: '2-digit' }),
-      status: 'sent',
-    }
-    setMessages(prev => ({
-      ...prev,
-      [selectedId]: [...(prev[selectedId] ?? []), newMsg],
-    }))
+  const handleSend = (text) => {
+    sendMessage(text)
   }
 
   return (
     <div className="chat-page">
       <ConversationSidebar
-        chats={CHATS}
+        chats={rooms}
+        loading={roomsLoading}
         selectedId={selectedId}
         onSelect={setSelectedId}
+        onRoomCreated={addRoom}
       />
       <main className="chat-area">
-        {selectedChat ? (
+        {selectedRoom ? (
           <>
-            <ChatHeader chat={selectedChat} />
+            <ChatHeader chat={selectedRoom} />
             <div className="chat-messages">
-              {chatMessages.map(msg => (
+              {messages.map(msg => (
                 <Message
                   key={msg.id}
                   msg={msg}
-                  isGroup={selectedChat.type === 'group'}
+                  isGroup={selectedRoom.type === 'group'}
                 />
               ))}
               <div ref={bottomRef} />
             </div>
-            <MessageInput onSend={sendMessage} />
+            <MessageInput onSend={handleSend} />
           </>
         ) : (
           <div className="chat-empty">

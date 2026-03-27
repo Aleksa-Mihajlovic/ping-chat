@@ -5,11 +5,13 @@ import Avatar from '../ui/Avatar'
 import IconButton from '../ui/IconButton'
 import SearchBar from './SearchBar'
 import ChatListItem from './ChatListItem'
+import CreateRoomModal from './CreateRoomModal'
 import { useAuth } from '../../context/AuthContext'
 import api from '../../lib/api'
 
-export default function ConversationSidebar({ chats, selectedId, onSelect }) {
-  const [search, setSearch] = useState('')
+export default function ConversationSidebar({ chats, loading, selectedId, onSelect, onRoomCreated }) {
+  const [search, setSearch]           = useState('')
+  const [createType, setCreateType]   = useState(null) // 'direct' | 'group' | null
   const { user, setUser } = useAuth()
   const navigate = useNavigate()
 
@@ -23,13 +25,18 @@ export default function ConversationSidebar({ chats, selectedId, onSelect }) {
     navigate('/login')
   }
 
+  const handleRoomCreated = (room) => {
+    onRoomCreated(room)
+    setCreateType(null)
+  }
+
   return (
     <aside className="sidebar">
       <header className="sidebar__header">
         <Avatar name={user ? `${user.first_name} ${user.last_name}` : '?'} size={38} />
         <div className="sidebar__actions">
-          <IconButton icon={<Users size={20} />}             label="Novi grupni chat" />
-          <IconButton icon={<MessageSquarePlus size={20} />} label="Novi chat" />
+          <IconButton icon={<Users size={20} />}             label="Novi grupni chat"  onClick={() => setCreateType('group')} />
+          <IconButton icon={<MessageSquarePlus size={20} />} label="Novi direktni chat" onClick={() => setCreateType('direct')} />
           <IconButton icon={<Settings size={20} />}          label="Podešavanja" />
           <IconButton icon={<LogOut size={20} />}            label="Odjavi se" onClick={handleLogout} />
         </div>
@@ -44,7 +51,9 @@ export default function ConversationSidebar({ chats, selectedId, onSelect }) {
       </div>
 
       <div className="sidebar__list">
-        {filtered.map(chat => (
+        {loading ? (
+          <p className="sidebar__empty">Učitavanje...</p>
+        ) : filtered.map(chat => (
           <ChatListItem
             key={chat.id}
             chat={chat}
@@ -53,6 +62,14 @@ export default function ConversationSidebar({ chats, selectedId, onSelect }) {
           />
         ))}
       </div>
+
+      {createType && (
+        <CreateRoomModal
+          initialType={createType}
+          onClose={() => setCreateType(null)}
+          onCreated={handleRoomCreated}
+        />
+      )}
     </aside>
   )
 }

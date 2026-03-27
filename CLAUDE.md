@@ -37,6 +37,8 @@ alembic upgrade head
 alembic revision --autogenerate -m "<description>"
 ```
 
+> Migration scripts are stored in `migrations/versions/` (not the default `alembic/versions/`). The `alembic.ini` `script_location` is set to `./migrations`.
+
 ## Architecture
 
 ### Request Flow
@@ -63,6 +65,17 @@ app/
   schemas/
   services/
 ```
+
+Services use a `BaseService` class for DB session injection via FastAPI `Depends`:
+```python
+class BaseService:
+    def __init__(self, session: AsyncSession = Depends(get_db)):
+        self.session = session
+```
+
+**User identity in backend services:** the gateway injects `x-user-id` and `x-user-email` as HTTP headers before proxying. Services read user identity from these headers — they never decode JWTs themselves.
+
+**chat-service routing:** all routes are mounted under `/chat` (e.g. `POST /chat/rooms`, `GET /chat/health`).
 
 ### Infrastructure Dependencies
 - **PostgreSQL** — persistent data (auth + chat)
